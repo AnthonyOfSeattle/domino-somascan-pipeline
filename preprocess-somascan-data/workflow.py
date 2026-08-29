@@ -3,7 +3,7 @@ import pathlib
 import subprocess
 
 from flytekit import workflow
-from flytekitplugins.domino.task import DominoJobConfig, DominoJobTask, GitRef
+from flytekitplugins.domino.task import DatasetSnapshot, DominoJobConfig, DominoJobTask, GitRef
 
 
 WORKFLOW_PATH = pathlib.Path(__file__).parent.resolve()
@@ -30,7 +30,9 @@ def preprocess_somascan_data(input_file: str) -> str:
         name='Convert ADAT to CSVs',
         domino_job_config=DominoJobConfig(
             Command="python " + os.path.join(WORKFLOW_PATH, "scripts", "adat_to_csvs.py"),
-            MainRepoGitRef = GitRef(Type="branches", Value=get_current_branch())
+            MainRepoGitRef = GitRef(Type="branches", Value=get_current_branch()),
+            DatasetSnapshots = [DatasetSnapshot(Id="6a90998054fe9d26cb55e343", Version=1)],
+            HardwareTierId = "small-k8s"
         ),
         inputs={'input_file': str},
         outputs={

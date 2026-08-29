@@ -39,12 +39,7 @@ if __name__ == "__main__":
     # 2. Parse data
     data = parse_adat(input_file)
 
-    # 3. Dump data
-    data.features.to_csv("/mnt/data/processed/features.csv", index=False)
-    data.samples.to_csv("/mnt/data/processed/samples.csv", index=False)
-    data.measurements.to_csv("/mnt/data/processed/samples.csv", index=False)
-
-    # 4. Write workflow outputs
-    Path("/workflow/outputs/features").write_text("/mnt/data/processed/features.csv")
-    Path("/workflow/outputs/samples").write_text("/mnt/data/processed/samples.csv")
-    Path("/workflow/outputs/measurements").write_text("/mnt/data/processed/measurements.csv")
+    # 3. Write workflow outputs
+    data.features.to_csv("/workflow/outputs/features.csv", index=False)
+    data.samples.to_csv("/workflow/outputs/samples.csv", index=False)
+    data.measurements.to_csv("/workflow/outputs/measurements.csv", index=False)

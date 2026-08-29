@@ -4,9 +4,11 @@ import subprocess
 
 from flytekit import workflow
 from flytekitplugins.domino.task import DatasetSnapshot, DominoJobConfig, DominoJobTask, GitRef
+from flytekitplugins.domino.artifact import Artifact, DATA, MODEL, REPORT
 
 
 WORKFLOW_PATH = pathlib.Path(__file__).parent.resolve()
+CONVERTED_DATA_ARTIFACT = Artifact(name="Converted Data", type=DATA)
 
 
 def get_current_branch():
@@ -36,12 +38,12 @@ def preprocess_somascan_data(input_file: str) -> str:
         ),
         inputs={'input_file': str},
         outputs={
-            'samples': str,
-            'features': str,
-            'measurements': str
+            'samples': CONVERTED_DATA_ARTIFACT.File(name="samples.csv"),
+            'features': CONVERTED_DATA_ARTIFACT.File(name="features.csv"),
+            'measurements': CONVERTED_DATA_ARTIFACT.File(name="measurements.csv")
         },
         use_latest=True
     )
-    samples, features, measurements_raw = adat_to_csvs(input_file=input_file)
+    converted_data = adat_to_csvs(input_file=input_file)
 
-    return measurements_raw
+    return "SUCCESS"

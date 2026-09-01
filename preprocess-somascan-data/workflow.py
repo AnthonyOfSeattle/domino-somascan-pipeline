@@ -123,4 +123,29 @@ def preprocess_somascan_data(input_file: str) -> str:
         features = features
     )
 
+    # 5. Inter-plate calibration
+    normalize_by_interplate_calibration = DominoJobTask(
+        name='Interplate calibration',
+        domino_job_config=DominoJobConfig(
+            Command="python " + os.path.join(WORKFLOW_PATH, "scripts", "interplate_calibration.py"),
+            MainRepoGitRef = GitRef(Type="branches", Value=get_current_branch()),
+            DatasetSnapshots = [DatasetSnapshot(Id="6a90998054fe9d26cb55e343", Version=1)],
+            HardwareTierId = "medium-k8s"
+        ),
+        inputs={
+            "measurements": FlyteFile[TypeVar("csv")],
+            "samples": FlyteFile[TypeVar("csv")],
+            "features": FlyteFile[TypeVar("csv")]
+        },
+        outputs={
+            'measurements_ipc': CONVERTED_DATA_ARTIFACT.File(name="measurements_ipc.csv")
+        },
+        use_latest=True
+    )
+    data_ipc = normalize_by_interplate_calibration(
+        measurements = data_psn,
+        samples = samples,
+        features = features
+    )
+
     return "SUCCESS"

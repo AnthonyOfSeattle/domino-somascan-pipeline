@@ -98,4 +98,29 @@ def preprocess_somascan_data(input_file: str) -> str:
         features = features
     )
 
+    # 4. Plate-scale normalization
+    normalize_by_plate_scale = DominoJobTask(
+        name='Plate-scale normalization',
+        domino_job_config=DominoJobConfig(
+            Command="python " + os.path.join(WORKFLOW_PATH, "scripts", "plate_scale_normalization.py"),
+            MainRepoGitRef = GitRef(Type="branches", Value=get_current_branch()),
+            DatasetSnapshots = [DatasetSnapshot(Id="6a90998054fe9d26cb55e343", Version=1)],
+            HardwareTierId = "medium-k8s"
+        ),
+        inputs={
+            "measurements": FlyteFile[TypeVar("csv")],
+            "samples": FlyteFile[TypeVar("csv")],
+            "features": FlyteFile[TypeVar("csv")]
+        },
+        outputs={
+            'measurements_psn': CONVERTED_DATA_ARTIFACT.File(name="measurements_psn.csv")
+        },
+        use_latest=True
+    )
+    data_psn = normalize_by_plate_scale(
+        measurements = data_msncal,
+        samples = samples,
+        features = features
+    )
+
     return "SUCCESS"

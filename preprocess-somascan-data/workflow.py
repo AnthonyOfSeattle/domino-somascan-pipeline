@@ -1,8 +1,10 @@
 import os
 import pathlib
 import subprocess
+from typing import TypeVar
 
 from flytekit import workflow
+from flytekit.types.file import FlyteFile
 from flytekitplugins.domino.task import DatasetSnapshot, DominoJobConfig, DominoJobTask, GitRef
 from flytekitplugins.domino.artifact import Artifact, DATA, MODEL, REPORT
 
@@ -44,16 +46,16 @@ def preprocess_somascan_data(input_file: str) -> str:
         },
         use_latest=True
     )
-    converted_data = adat_to_csvs(input_file=input_file)
+    samples, features, measurements = adat_to_csvs(input_file=input_file)
 
     # 2. Hybridization control normalization
     normalize_by_hce = DominoJobTask(
         name='Hybridization control normalization',
         domino_job_config=DominoJobConfig(
-            Command="python " + os.path.join(WORKFLOW_PATH, "scripts", "hybridization_contol_normalization.py"),
+            Command="python " + os.path.join(WORKFLOW_PATH, "scripts", "hybridization_control_normalization.py"),
             MainRepoGitRef = GitRef(Type="branches", Value=get_current_branch()),
             DatasetSnapshots = [DatasetSnapshot(Id="6a90998054fe9d26cb55e343", Version=1)],
-            HardwareTierId = "small-k8s"
+            HardwareTierId = "medium-k8s"
         ),
         inputs={
             "measurements": FlyteFile[TypeVar("csv")],
@@ -61,14 +63,14 @@ def preprocess_somascan_data(input_file: str) -> str:
             "features": FlyteFile[TypeVar("csv")]
         },
         outputs={
-            'measurements_hcn': CONVERTED_DATA_ARTIFACT.File(name="measurements.hybridization_control_normalized.csv")
+            'measurements_hcn': CONVERTED_DATA_ARTIFACT.File(name="measurements_hcn.csv")
         },
         use_latest=True
     )
     data_hcn = normalize_by_hce(
-        measurements = converted_data["measurements"],
-        samples = converted_data["samples"],
-        features = converted_data["features"]
+        measurements = measurements,
+        samples = samples,
+        features = features
     )
 
     return "SUCCESS"

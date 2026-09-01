@@ -60,15 +60,15 @@ def normalize_by_hce(
 
 if __name__ == "__main__":
     # 1. Read input
-    measurements = pd.read_csv("/workflow/outputs/measurements.csv", index=False)
-    samples = pd.read_csv("/workflow/outputs/samples.csv", index=False)
-    features = pd.read_csv("/workflow/outputs/features.csv", index=False)
+    measurements = pd.read_csv("/workflow/inputs/measurements")
+    samples = pd.read_csv("/workflow/inputs/samples")
+    features = pd.read_csv("/workflow/inputs/features")
 
     # 2. Normalize data
     measurements_processed = normalize_by_hce(measurements, samples, features)
 
     # 3. Write workflow output
     measurements_processed.to_csv(
-        "/workflow/outputs/measurements.hybridization_control_normalized.csv",
+        "/workflow/outputs/measurements_hcn.csv",
         index=False
     )

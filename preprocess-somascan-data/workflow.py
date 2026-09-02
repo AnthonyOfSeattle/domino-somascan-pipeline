@@ -12,6 +12,7 @@ from flytekitplugins.domino.artifact import Artifact, DATA, REPORT
 WORKFLOW_PATH = pathlib.Path(__file__).parent.resolve()
 CONVERTED_DATA_ARTIFACT = Artifact(name="Converted Data", type=DATA)
 QC_ARTIFACT = Artifact(name="QC Report", type=REPORT)
+FINAL_DATASET_ARTIFACT = Artifact(name="Final Dataset", type=DATA)
 
 
 def get_current_branch():
@@ -202,7 +203,34 @@ def preprocess_somascan_data(input_file: str) -> str:
         features = features
     )
 
-    # 7. QC report on the fully normalized data
+    # 7. Finalize dataset
+    finalize_dataset = DominoJobTask(
+        name='Finalize dataset',
+        domino_job_config=DominoJobConfig(
+            Command="python " + os.path.join(WORKFLOW_PATH, "scripts", "finalize_dataset.py"),
+            MainRepoGitRef = GitRef(Type="branches", Value=get_current_branch()),
+            DatasetSnapshots = [DatasetSnapshot(Id="6a90998054fe9d26cb55e343", Version=1)],
+            HardwareTierId = "medium-k8s"
+        ),
+        inputs={
+            "measurements": FlyteFile[TypeVar("csv")],
+            "samples": FlyteFile[TypeVar("csv")],
+            "features": FlyteFile[TypeVar("csv")]
+        },
+        outputs={
+            'samples_final': FINAL_DATASET_ARTIFACT.File(name="samples.csv"),
+            'features_final': FINAL_DATASET_ARTIFACT.File(name="features.csv"),
+            'measurements_final': FINAL_DATASET_ARTIFACT.File(name="measurements.csv")
+        },
+        use_latest=True
+    )
+    finalize_dataset(
+        measurements = data_msnall,
+        samples = samples,
+        features = features
+    )
+
+    # 8. QC report on the fully normalized data
     qc_report_final = DominoJobTask(
         name='QC report (final)',
         domino_job_config=DominoJobConfig(

@@ -1,5 +1,8 @@
 jupyterlab==4.4.9
+matplotlib==3.10.6
 pandas==2.3.2
 pyarrow==21.0.0
 pytest==9.1.1
+scikit-learn==1.7.2
+seaborn==0.13.2
 SomaData==1.2.6

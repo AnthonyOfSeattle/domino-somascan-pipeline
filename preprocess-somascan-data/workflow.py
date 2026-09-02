@@ -56,7 +56,6 @@ def preprocess_somascan_data(input_file: str) -> str:
         domino_job_config=DominoJobConfig(
             Command="python " + os.path.join(WORKFLOW_PATH, "scripts", "qc_report.py"),
             MainRepoGitRef = GitRef(Type="branches", Value=get_current_branch()),
-            DatasetSnapshots = [DatasetSnapshot(Id="6a90998054fe9d26cb55e343", Version=1)],
             HardwareTierId = "medium-k8s"
         ),
         inputs={
@@ -84,7 +83,6 @@ def preprocess_somascan_data(input_file: str) -> str:
         domino_job_config=DominoJobConfig(
             Command="python " + os.path.join(WORKFLOW_PATH, "scripts", "hybridization_control_normalization.py"),
             MainRepoGitRef = GitRef(Type="branches", Value=get_current_branch()),
-            DatasetSnapshots = [DatasetSnapshot(Id="6a90998054fe9d26cb55e343", Version=1)],
             HardwareTierId = "medium-k8s"
         ),
         inputs={
@@ -109,7 +107,6 @@ def preprocess_somascan_data(input_file: str) -> str:
         domino_job_config=DominoJobConfig(
             Command="python " + os.path.join(WORKFLOW_PATH, "scripts", "median_signal_normalization_calibrators.py"),
             MainRepoGitRef = GitRef(Type="branches", Value=get_current_branch()),
-            DatasetSnapshots = [DatasetSnapshot(Id="6a90998054fe9d26cb55e343", Version=1)],
             HardwareTierId = "medium-k8s"
         ),
         inputs={
@@ -134,7 +131,6 @@ def preprocess_somascan_data(input_file: str) -> str:
         domino_job_config=DominoJobConfig(
             Command="python " + os.path.join(WORKFLOW_PATH, "scripts", "plate_scale_normalization.py"),
             MainRepoGitRef = GitRef(Type="branches", Value=get_current_branch()),
-            DatasetSnapshots = [DatasetSnapshot(Id="6a90998054fe9d26cb55e343", Version=1)],
             HardwareTierId = "medium-k8s"
         ),
         inputs={
@@ -159,7 +155,6 @@ def preprocess_somascan_data(input_file: str) -> str:
         domino_job_config=DominoJobConfig(
             Command="python " + os.path.join(WORKFLOW_PATH, "scripts", "interplate_calibration.py"),
             MainRepoGitRef = GitRef(Type="branches", Value=get_current_branch()),
-            DatasetSnapshots = [DatasetSnapshot(Id="6a90998054fe9d26cb55e343", Version=1)],
             HardwareTierId = "medium-k8s"
         ),
         inputs={
@@ -184,7 +179,6 @@ def preprocess_somascan_data(input_file: str) -> str:
         domino_job_config=DominoJobConfig(
             Command="python " + os.path.join(WORKFLOW_PATH, "scripts", "median_signal_normalization_all.py"),
             MainRepoGitRef = GitRef(Type="branches", Value=get_current_branch()),
-            DatasetSnapshots = [DatasetSnapshot(Id="6a90998054fe9d26cb55e343", Version=1)],
             HardwareTierId = "medium-k8s"
         ),
         inputs={
@@ -209,7 +203,6 @@ def preprocess_somascan_data(input_file: str) -> str:
         domino_job_config=DominoJobConfig(
             Command="python " + os.path.join(WORKFLOW_PATH, "scripts", "finalize_dataset.py"),
             MainRepoGitRef = GitRef(Type="branches", Value=get_current_branch()),
-            DatasetSnapshots = [DatasetSnapshot(Id="6a90998054fe9d26cb55e343", Version=1)],
             HardwareTierId = "medium-k8s"
         ),
         inputs={
@@ -236,7 +229,6 @@ def preprocess_somascan_data(input_file: str) -> str:
         domino_job_config=DominoJobConfig(
             Command="python " + os.path.join(WORKFLOW_PATH, "scripts", "qc_report.py"),
             MainRepoGitRef = GitRef(Type="branches", Value=get_current_branch()),
-            DatasetSnapshots = [DatasetSnapshot(Id="6a90998054fe9d26cb55e343", Version=1)],
             HardwareTierId = "medium-k8s"
         ),
         inputs={

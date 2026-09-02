@@ -7,6 +7,7 @@ from scripts import hybridization_control_normalization as hcn
 from scripts import median_signal_normalization_calibrators as msncal
 from scripts import plate_scale_normalization as psn
 from scripts import interplate_calibration as ipc
+from scripts import median_signal_normalization_all as msnall
 
 TESTS_PATH = os.path.dirname(os.path.abspath(__file__))
 
@@ -76,5 +77,16 @@ def test_calibrators_normalized_by_interplate_calibration():
     features = pd.read_parquet(os.path.join(TESTS_PATH, "data", "features.parquet.gz"))
 
     measurements = ipc.normalize_by_interplate_calibration(measurements, samples, features)
+
+    assert_matches_expected(measurements, measurements_expected)
+
+
+def test_all_samples_normalized_by_msn():
+    measurements = pd.read_parquet(os.path.join(TESTS_PATH, "data", "measurements_ipc.parquet.gz"))
+    measurements_expected = pd.read_parquet(os.path.join(TESTS_PATH, "data", "measurements_msnall.parquet.gz"))
+    samples = pd.read_parquet(os.path.join(TESTS_PATH, "data", "samples.parquet.gz"))
+    features = pd.read_parquet(os.path.join(TESTS_PATH, "data", "features.parquet.gz"))
+
+    measurements = msnall.normalize_by_msn_all(measurements, samples, features)
 
     assert_matches_expected(measurements, measurements_expected)

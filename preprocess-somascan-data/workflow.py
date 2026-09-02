@@ -148,4 +148,29 @@ def preprocess_somascan_data(input_file: str) -> str:
         features = features
     )
 
+    # 6. Median signal normalization on all sample types
+    normalize_by_msn_all = DominoJobTask(
+        name='Median signal normalization on all sample types',
+        domino_job_config=DominoJobConfig(
+            Command="python " + os.path.join(WORKFLOW_PATH, "scripts", "median_signal_normalization_all.py"),
+            MainRepoGitRef = GitRef(Type="branches", Value=get_current_branch()),
+            DatasetSnapshots = [DatasetSnapshot(Id="6a90998054fe9d26cb55e343", Version=1)],
+            HardwareTierId = "medium-k8s"
+        ),
+        inputs={
+            "measurements": FlyteFile[TypeVar("csv")],
+            "samples": FlyteFile[TypeVar("csv")],
+            "features": FlyteFile[TypeVar("csv")]
+        },
+        outputs={
+            'measurements_msnall': CONVERTED_DATA_ARTIFACT.File(name="measurements_msnall.csv")
+        },
+        use_latest=True
+    )
+    data_msnall = normalize_by_msn_all(
+        measurements = data_ipc,
+        samples = samples,
+        features = features
+    )
+
     return "SUCCESS"

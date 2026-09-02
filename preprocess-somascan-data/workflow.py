@@ -218,9 +218,9 @@ def preprocess_somascan_data(input_file: str) -> str:
             "features": FlyteFile[TypeVar("csv")]
         },
         outputs={
-            'samples_final': FINAL_DATASET_ARTIFACT.File(name="samples.csv"),
-            'features_final': FINAL_DATASET_ARTIFACT.File(name="features.csv"),
-            'measurements_final': FINAL_DATASET_ARTIFACT.File(name="measurements.csv")
+            'samples_final': FINAL_DATASET_ARTIFACT.File(name="samples_final.csv"),
+            'features_final': FINAL_DATASET_ARTIFACT.File(name="features_final.csv"),
+            'measurements_final': FINAL_DATASET_ARTIFACT.File(name="measurements_final.csv")
         },
         use_latest=True
     )

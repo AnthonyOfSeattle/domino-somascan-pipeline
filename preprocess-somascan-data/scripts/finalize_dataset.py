@@ -43,6 +43,6 @@ if __name__ == "__main__":
     )
 
     # 3. Write workflow outputs
-    samples_final.to_csv("/workflow/outputs/samples.csv", index=False)
-    features_final.to_csv("/workflow/outputs/features.csv", index=False)
-    measurements_final.to_csv("/workflow/outputs/measurements.csv", index=False)
+    samples_final.to_csv("/workflow/outputs/samples_final.csv", index=False)
+    features_final.to_csv("/workflow/outputs/features_final.csv", index=False)
+    measurements_final.to_csv("/workflow/outputs/measurements_final.csv", index=False)

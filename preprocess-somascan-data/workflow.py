@@ -6,11 +6,12 @@ from typing import TypeVar
 from flytekit import workflow
 from flytekit.types.file import FlyteFile
 from flytekitplugins.domino.task import DatasetSnapshot, DominoJobConfig, DominoJobTask, GitRef
-from flytekitplugins.domino.artifact import Artifact, DATA, MODEL, REPORT
+from flytekitplugins.domino.artifact import Artifact, DATA, REPORT
 
 
 WORKFLOW_PATH = pathlib.Path(__file__).parent.resolve()
 CONVERTED_DATA_ARTIFACT = Artifact(name="Converted Data", type=DATA)
+QC_ARTIFACT = Artifact(name="QC Report", type=REPORT)
 
 
 def get_current_branch():
@@ -47,6 +48,34 @@ def preprocess_somascan_data(input_file: str) -> str:
         use_latest=True
     )
     samples, features, measurements = adat_to_csvs(input_file=input_file)
+
+    # 1b. QC report on the freshly converted data
+    qc_report_raw = DominoJobTask(
+        name='QC report (raw)',
+        domino_job_config=DominoJobConfig(
+            Command="python " + os.path.join(WORKFLOW_PATH, "scripts", "qc_report.py"),
+            MainRepoGitRef = GitRef(Type="branches", Value=get_current_branch()),
+            DatasetSnapshots = [DatasetSnapshot(Id="6a90998054fe9d26cb55e343", Version=1)],
+            HardwareTierId = "medium-k8s"
+        ),
+        inputs={
+            "stage": str,
+            "measurements": FlyteFile[TypeVar("csv")],
+            "samples": FlyteFile[TypeVar("csv")],
+            "features": FlyteFile[TypeVar("csv")]
+        },
+        outputs={
+            'pca_raw': QC_ARTIFACT.File(name="pca_raw.png"),
+            'cv_raw': QC_ARTIFACT.File(name="cv_raw.png")
+        },
+        use_latest=True
+    )
+    qc_report_raw(
+        stage="raw",
+        measurements = measurements,
+        samples = samples,
+        features = features
+    )
 
     # 2. Hybridization control normalization
     normalize_by_hce = DominoJobTask(
@@ -169,6 +198,34 @@ def preprocess_somascan_data(input_file: str) -> str:
     )
     data_msnall = normalize_by_msn_all(
         measurements = data_ipc,
+        samples = samples,
+        features = features
+    )
+
+    # 7. QC report on the fully normalized data
+    qc_report_final = DominoJobTask(
+        name='QC report (final)',
+        domino_job_config=DominoJobConfig(
+            Command="python " + os.path.join(WORKFLOW_PATH, "scripts", "qc_report.py"),
+            MainRepoGitRef = GitRef(Type="branches", Value=get_current_branch()),
+            DatasetSnapshots = [DatasetSnapshot(Id="6a90998054fe9d26cb55e343", Version=1)],
+            HardwareTierId = "medium-k8s"
+        ),
+        inputs={
+            "stage": str,
+            "measurements": FlyteFile[TypeVar("csv")],
+            "samples": FlyteFile[TypeVar("csv")],
+            "features": FlyteFile[TypeVar("csv")]
+        },
+        outputs={
+            'pca_final': QC_ARTIFACT.File(name="pca_final.png"),
+            'cv_final': QC_ARTIFACT.File(name="cv_final.png")
+        },
+        use_latest=True
+    )
+    qc_report_final(
+        stage="final",
+        measurements = data_msnall,
         samples = samples,
         features = features
     )

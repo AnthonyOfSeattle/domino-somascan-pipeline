@@ -3,6 +3,7 @@ import pathlib
 import subprocess
 from typing import TypeVar
 
+from domino import Domino
 from flytekit import workflow
 from flytekit.types.file import FlyteFile
 from flytekitplugins.domino.task import DatasetSnapshot, DominoJobConfig, DominoJobTask, GitRef
@@ -10,9 +11,15 @@ from flytekitplugins.domino.artifact import Artifact, DATA, REPORT
 
 
 WORKFLOW_PATH = pathlib.Path(__file__).parent.resolve()
+SOURCE_DATASET_NAME = "raw"
+
 CONVERTED_DATA_ARTIFACT = Artifact(name="Converted Data", type=DATA)
 QC_ARTIFACT = Artifact(name="QC Report", type=REPORT)
 FINAL_DATASET_ARTIFACT = Artifact(name="Final Dataset", type=DATA)
+
+
+class DeployError(Exception):
+    pass
 
 
 def get_current_branch():
@@ -28,6 +35,31 @@ def get_current_branch():
         return None
 
 
+def get_source_dataset_snapshot():
+    domino = Domino(
+        os.path.join(
+            os.environ["DOMINO_USER_NAME"],
+            os.environ["DOMINO_PROJECT_NAME"]
+        )
+    )
+    datasets = [
+        d for d in domino.datasets_list(os.environ["DOMINO_PROJECT_ID"])
+        if d["datasetName"] == SOURCE_DATASET_NAME
+    ]
+    if not datasets:
+        raise DeployError(f"No dataset present named '{SOURCE_DATASET_NAME}'")
+
+    dataset_details = domino.datasets_details(datasets[0]["datasetId"])
+    if len(dataset_details["snapshots"]) == 1:
+        raise DeployError(f"You must make a snapshot of dataset '{SOURCE_DATASET_NAME}'")
+
+    dataset_snapshot = DatasetSnapshot(
+        Id = dataset_details["datasetId"],
+        Version = len(dataset_details["snapshots"]) - 1
+    )
+    return dataset_snapshot
+
+
 @workflow
 def preprocess_somascan_data(input_file: str) -> str:
 
@@ -37,7 +69,7 @@ def preprocess_somascan_data(input_file: str) -> str:
         domino_job_config=DominoJobConfig(
             Command="python " + os.path.join(WORKFLOW_PATH, "scripts", "adat_to_csvs.py"),
             MainRepoGitRef = GitRef(Type="branches", Value=get_current_branch()),
-            DatasetSnapshots = [DatasetSnapshot(Id="6a90998054fe9d26cb55e343", Version=1)],
+            DatasetSnapshots = [get_source_dataset_snapshot()],
             HardwareTierId = "small-k8s"
         ),
         inputs={'input_file': str},

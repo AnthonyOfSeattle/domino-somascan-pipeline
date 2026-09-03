@@ -8,7 +8,7 @@ Flyte workflow definition and pipeline step scripts for preprocessing SomaScan p
 The workflow (`workflow.py`, `preprocess_somascan_data`) takes a raw `.adat` file and a Domino dataset
 snapshot it was uploaded to, and runs a linear sequence of `DominoJobTask` steps, each executing one script
 in `scripts/` as a standalone Domino job. Flyte passes data between steps as files (`FlyteFile`), not
-in-process Python objects, and each step is committed to its own Domino artifact:
+in-process Python objects, and the output of each step is committed to its a Domino artifact:
 
 - **Converted Data** (`CONVERTED_DATA_ARTIFACT`, type `DATA`) — the intermediate `samples`/`features`/
   `measurements` CSVs produced and refined by each conversion/normalization step.

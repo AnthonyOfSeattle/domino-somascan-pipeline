@@ -3,6 +3,7 @@ import pathlib
 import subprocess
 from typing import TypeVar
 
+from domino import Domino
 from flytekit import workflow
 from flytekit.types.file import FlyteFile
 from flytekitplugins.domino.task import DatasetSnapshot, DominoJobConfig, DominoJobTask, GitRef
@@ -10,9 +11,15 @@ from flytekitplugins.domino.artifact import Artifact, DATA, REPORT
 
 
 WORKFLOW_PATH = pathlib.Path(__file__).parent.resolve()
+SOURCE_DATASET_NAME = os.environ.get("PREPROCESS_SOMASCAN_DATA_SOURCE", "raw")
+
 CONVERTED_DATA_ARTIFACT = Artifact(name="Converted Data", type=DATA)
 QC_ARTIFACT = Artifact(name="QC Report", type=REPORT)
 FINAL_DATASET_ARTIFACT = Artifact(name="Final Dataset", type=DATA)
+
+
+class DeployError(Exception):
+    pass
 
 
 def get_current_branch():
@@ -28,6 +35,31 @@ def get_current_branch():
         return None
 
 
+def get_source_dataset_snapshot():
+    domino = Domino(
+        os.path.join(
+            os.environ["DOMINO_USER_NAME"],
+            os.environ["DOMINO_PROJECT_NAME"]
+        )
+    )
+    datasets = [
+        d for d in domino.datasets_list(os.environ["DOMINO_PROJECT_ID"])
+        if d["datasetName"] == SOURCE_DATASET_NAME
+    ]
+    if not datasets:
+        raise DeployError(f"No dataset present named '{SOURCE_DATASET_NAME}'")
+
+    dataset_details = domino.datasets_details(datasets[0]["datasetId"])
+    if len(dataset_details["snapshots"]) == 1:
+        raise DeployError(f"You must make a snapshot of dataset '{SOURCE_DATASET_NAME}'")
+
+    dataset_snapshot = DatasetSnapshot(
+        Id = dataset_details["datasetId"],
+        Version = len(dataset_details["snapshots"]) - 1
+    )
+    return dataset_snapshot
+
+
 @workflow
 def preprocess_somascan_data(input_file: str) -> str:
 
@@ -37,10 +69,10 @@ def preprocess_somascan_data(input_file: str) -> str:
         domino_job_config=DominoJobConfig(
             Command="python " + os.path.join(WORKFLOW_PATH, "scripts", "adat_to_csvs.py"),
             MainRepoGitRef = GitRef(Type="branches", Value=get_current_branch()),
-            DatasetSnapshots = [DatasetSnapshot(Id="6a90998054fe9d26cb55e343", Version=1)],
+            DatasetSnapshots = [get_source_dataset_snapshot()],
             HardwareTierId = "small-k8s"
         ),
-        inputs={'input_file': str},
+        inputs={'input_file': str, 'source_dataset': str},
         outputs={
             'samples': CONVERTED_DATA_ARTIFACT.File(name="samples.csv"),
             'features': CONVERTED_DATA_ARTIFACT.File(name="features.csv"),
@@ -48,7 +80,10 @@ def preprocess_somascan_data(input_file: str) -> str:
         },
         use_latest=True
     )
-    samples, features, measurements = adat_to_csvs(input_file=input_file)
+    samples, features, measurements = adat_to_csvs(
+        input_file=input_file,
+        source_dataset=SOURCE_DATASET_NAME
+    )
 
     # 1b. QC report on the freshly converted data
     qc_report_raw = DominoJobTask(
@@ -56,7 +91,6 @@ def preprocess_somascan_data(input_file: str) -> str:
         domino_job_config=DominoJobConfig(
             Command="python " + os.path.join(WORKFLOW_PATH, "scripts", "qc_report.py"),
             MainRepoGitRef = GitRef(Type="branches", Value=get_current_branch()),
-            DatasetSnapshots = [DatasetSnapshot(Id="6a90998054fe9d26cb55e343", Version=1)],
             HardwareTierId = "medium-k8s"
         ),
         inputs={
@@ -84,7 +118,6 @@ def preprocess_somascan_data(input_file: str) -> str:
         domino_job_config=DominoJobConfig(
             Command="python " + os.path.join(WORKFLOW_PATH, "scripts", "hybridization_control_normalization.py"),
             MainRepoGitRef = GitRef(Type="branches", Value=get_current_branch()),
-            DatasetSnapshots = [DatasetSnapshot(Id="6a90998054fe9d26cb55e343", Version=1)],
             HardwareTierId = "medium-k8s"
         ),
         inputs={
@@ -109,7 +142,6 @@ def preprocess_somascan_data(input_file: str) -> str:
         domino_job_config=DominoJobConfig(
             Command="python " + os.path.join(WORKFLOW_PATH, "scripts", "median_signal_normalization_calibrators.py"),
             MainRepoGitRef = GitRef(Type="branches", Value=get_current_branch()),
-            DatasetSnapshots = [DatasetSnapshot(Id="6a90998054fe9d26cb55e343", Version=1)],
             HardwareTierId = "medium-k8s"
         ),
         inputs={
@@ -134,7 +166,6 @@ def preprocess_somascan_data(input_file: str) -> str:
         domino_job_config=DominoJobConfig(
             Command="python " + os.path.join(WORKFLOW_PATH, "scripts", "plate_scale_normalization.py"),
             MainRepoGitRef = GitRef(Type="branches", Value=get_current_branch()),
-            DatasetSnapshots = [DatasetSnapshot(Id="6a90998054fe9d26cb55e343", Version=1)],
             HardwareTierId = "medium-k8s"
         ),
         inputs={
@@ -159,7 +190,6 @@ def preprocess_somascan_data(input_file: str) -> str:
         domino_job_config=DominoJobConfig(
             Command="python " + os.path.join(WORKFLOW_PATH, "scripts", "interplate_calibration.py"),
             MainRepoGitRef = GitRef(Type="branches", Value=get_current_branch()),
-            DatasetSnapshots = [DatasetSnapshot(Id="6a90998054fe9d26cb55e343", Version=1)],
             HardwareTierId = "medium-k8s"
         ),
         inputs={
@@ -184,7 +214,6 @@ def preprocess_somascan_data(input_file: str) -> str:
         domino_job_config=DominoJobConfig(
             Command="python " + os.path.join(WORKFLOW_PATH, "scripts", "median_signal_normalization_all.py"),
             MainRepoGitRef = GitRef(Type="branches", Value=get_current_branch()),
-            DatasetSnapshots = [DatasetSnapshot(Id="6a90998054fe9d26cb55e343", Version=1)],
             HardwareTierId = "medium-k8s"
         ),
         inputs={
@@ -209,7 +238,6 @@ def preprocess_somascan_data(input_file: str) -> str:
         domino_job_config=DominoJobConfig(
             Command="python " + os.path.join(WORKFLOW_PATH, "scripts", "finalize_dataset.py"),
             MainRepoGitRef = GitRef(Type="branches", Value=get_current_branch()),
-            DatasetSnapshots = [DatasetSnapshot(Id="6a90998054fe9d26cb55e343", Version=1)],
             HardwareTierId = "medium-k8s"
         ),
         inputs={
@@ -236,7 +264,6 @@ def preprocess_somascan_data(input_file: str) -> str:
         domino_job_config=DominoJobConfig(
             Command="python " + os.path.join(WORKFLOW_PATH, "scripts", "qc_report.py"),
             MainRepoGitRef = GitRef(Type="branches", Value=get_current_branch()),
-            DatasetSnapshots = [DatasetSnapshot(Id="6a90998054fe9d26cb55e343", Version=1)],
             HardwareTierId = "medium-k8s"
         ),
         inputs={

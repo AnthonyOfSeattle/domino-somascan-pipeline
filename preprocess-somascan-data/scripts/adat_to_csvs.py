@@ -33,13 +33,22 @@ def parse_adat(input_file: str) -> SomaScanData:
     return data
 
 if __name__ == "__main__":
-    # 1. Read input
-    input_file = Path("/workflow/inputs/input_file").read_text()
+    # 1. Read inputs
+    input_file = Path("/workflow/inputs/input_file").read_text().strip()
+    source_dataset = Path("/workflow/inputs/source_dataset").read_text().strip()
 
-    # 2. Parse data
-    data = parse_adat(input_file)
+    # 2. Resolve the file within the source dataset mount
+    dataset_dir = Path("/mnt/data") / source_dataset
+    resolved_file = dataset_dir / Path(input_file).name
+    if not resolved_file.exists():
+        raise FileNotFoundError(
+            f"Could not find '{resolved_file.name}' in dataset '{source_dataset}' at {dataset_dir}"
+        )
 
-    # 3. Write workflow outputs
+    # 3. Parse data
+    data = parse_adat(str(resolved_file))
+
+    # 4. Write workflow outputs
     data.features.to_csv("/workflow/outputs/features.csv", index=False)
     data.samples.to_csv("/workflow/outputs/samples.csv", index=False)
     data.measurements.to_csv("/workflow/outputs/measurements.csv", index=False)

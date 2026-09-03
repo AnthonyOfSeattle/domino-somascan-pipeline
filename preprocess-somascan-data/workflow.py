@@ -11,7 +11,7 @@ from flytekitplugins.domino.artifact import Artifact, DATA, REPORT
 
 
 WORKFLOW_PATH = pathlib.Path(__file__).parent.resolve()
-SOURCE_DATASET_NAME = "raw"
+SOURCE_DATASET_NAME = os.environ.get("PREPROCESS_SOMASCAN_DATA_SOURCE", "raw")
 
 CONVERTED_DATA_ARTIFACT = Artifact(name="Converted Data", type=DATA)
 QC_ARTIFACT = Artifact(name="QC Report", type=REPORT)
@@ -72,7 +72,7 @@ def preprocess_somascan_data(input_file: str) -> str:
             DatasetSnapshots = [get_source_dataset_snapshot()],
             HardwareTierId = "small-k8s"
         ),
-        inputs={'input_file': str},
+        inputs={'input_file': str, 'source_dataset': str},
         outputs={
             'samples': CONVERTED_DATA_ARTIFACT.File(name="samples.csv"),
             'features': CONVERTED_DATA_ARTIFACT.File(name="features.csv"),
@@ -80,7 +80,10 @@ def preprocess_somascan_data(input_file: str) -> str:
         },
         use_latest=True
     )
-    samples, features, measurements = adat_to_csvs(input_file=input_file)
+    samples, features, measurements = adat_to_csvs(
+        input_file=input_file,
+        source_dataset=SOURCE_DATASET_NAME
+    )
 
     # 1b. QC report on the freshly converted data
     qc_report_raw = DominoJobTask(

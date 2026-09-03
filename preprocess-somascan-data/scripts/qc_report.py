@@ -38,7 +38,7 @@ def plot_sample_pca(
     x = pca.fit_transform(measurements_wide)
 
     # 3. Plot the first two components, colored by plate
-    fig, ax = plt.subplots(figsize=[6.25, 6])
+    fig, ax = plt.subplots(figsize=[8, 4.5])
     sns.scatterplot(
         x=x[:, 0],
         y=x[:, 1],
@@ -48,7 +48,12 @@ def plot_sample_pca(
         alpha=.75,
         ax=ax
     )
-    ax.legend(title="Plate ID", ncol=2, bbox_to_anchor=(1, 1))
+    ax.legend(
+        title = "Plate ID",
+        ncol=2,
+        bbox_to_anchor=(1.05, 1),
+        loc="upper left"
+    )
     ax.set_xlabel(f"PC1 ({pca.explained_variance_ratio_[0] * 100:.1f}%)")
     ax.set_ylabel(f"PC2 ({pca.explained_variance_ratio_[1] * 100:.1f}%)")
     ax.set_title(title)
